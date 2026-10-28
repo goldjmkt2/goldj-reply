@@ -85,6 +85,10 @@ td input{padding:6px 8px}
 .refs .h::after{content:" ↗";color:var(--gold);font-weight:400}
 .addform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end;border-top:1px dashed var(--line);padding-top:12px}
 .del{padding:4px 8px;font-size:12px;color:var(--warn)}
+#addMsg.err{color:var(--warn);font-weight:700}
+#addMsg.ok{color:var(--ok);font-weight:700}
+tr.new td{background:var(--gold-soft);transition:background 1.5s}
+input[aria-invalid="true"]{border-color:var(--warn)}
 .savebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:12px}
 .savebar .dirty{color:var(--warn)}
 .selchip{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:4px 6px 4px 12px;border-radius:999px;background:var(--gold-soft);border:1px solid var(--gold)}
@@ -130,10 +134,10 @@ td input{padding:6px 8px}
       </table>
     </div>
     <div class="addform" id="addForm">
-      <label for="nKo">시술명 (한국어)<input type="text" id="nKo" placeholder="예: 써마지"></label>
-      <label for="nZh">중국어 표기<input type="text" id="nZh" placeholder="예: 鳳凰電波 Thermage"></label>
+      <label for="nKo">시술명 (한국어, 필수)<input type="text" id="nKo" placeholder="예: 써마지"></label>
+      <label for="nZh">중국어 표기 (필수)<input type="text" id="nZh" placeholder="예: 鳳凰電波 Thermage"></label>
       <label for="nUnit">단위<input type="text" id="nUnit" placeholder="예: 600發"></label>
-      <label for="nKrw">가격 (원)<input type="number" class="num" id="nKrw" placeholder="예: 1790000"></label>
+      <label for="nKrw">가격 (원)<input type="text" inputmode="numeric" class="num" id="nKrw" placeholder="예: 1790000"></label>
       <button id="addBtn" type="button">＋ 시술 추가</button>
       <details class="addmore">
         <summary>더 입력하기 (선택) — 고민 분류·효과·원글 감지 단어</summary>
@@ -266,7 +270,7 @@ function markDirty(){$("saveMsg").textContent="저장하지 않은 변경이 있
 function commit(){
   for(const [id,k] of Object.entries(FIELDS)){const v=$(id).value.trim();S[k]=k==="rate"?(parseFloat(v)||0):v;}
   S.zh=$("sZh").checked;S.doc=$("sDoc").checked;
-  ALL().forEach(p=>{const o=S.procs[p.id]=S.procs[p.id]||{};o.zh=$("pz-"+p.id).value.trim();o.unit=$("pu-"+p.id).value.trim();o.krw=$("pk-"+p.id).value.trim();});
+  ALL().forEach(p=>{const o=S.procs[p.id]=S.procs[p.id]||{};o.zh=$("pz-"+p.id).value.trim();o.unit=$("pu-"+p.id).value.trim();o.krw=$("pk-"+p.id).value.replace(/[^0-9]/g,"");});
 }
 function saveAll(msg){
   commit();save();
@@ -280,28 +284,37 @@ function bindSettings(){
   renderRows();
   $("nCat").innerHTML=Object.entries(CONCERNS).map(([k,v])=>`<option value="${k}">${v.ko}</option>`).join("")+`<option value="other">기타</option>`;
   $("addBtn").addEventListener("click",addProc);
+  ["nKo","nZh","nUnit","nKrw"].forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addProc();}}));
   $("saveBtn").addEventListener("click",()=>saveAll());
   $("priceSelect").addEventListener("change",e=>{const id=e.target.value;if(id){state.priceSel.add(id);renderPriceChips();if(state.a)generate();}});
   status();
 }
 function renderRows(){
-  $("procRows").innerHTML=ALL().map(p=>{const v=P(p);const custom=p.id.startsWith("c_");return `<tr><td>${esc(p.ko)}</td><td><input type="text" id="pz-${p.id}" value="${esc(v.zh)}" aria-label="${esc(p.ko)} 중국어 표기"></td><td><input type="text" id="pu-${p.id}" value="${esc(v.unit)}" aria-label="${esc(p.ko)} 단위"></td><td><input type="number" class="num" id="pk-${p.id}" value="${esc(v.krw)}" placeholder="예: 990000" aria-label="${esc(p.ko)} 가격"></td><td>${custom?`<button class="del" data-del="${p.id}" type="button">삭제</button>`:""}</td></tr>`;}).join("");
+  $("procRows").innerHTML=ALL().map(p=>{const v=P(p);const custom=p.id.startsWith("c_");return `<tr><td>${esc(p.ko)}</td><td><input type="text" id="pz-${p.id}" value="${esc(v.zh)}" aria-label="${esc(p.ko)} 중국어 표기"></td><td><input type="text" id="pu-${p.id}" value="${esc(v.unit)}" aria-label="${esc(p.ko)} 단위"></td><td><input type="text" inputmode="numeric" class="num" id="pk-${p.id}" value="${esc(v.krw)}" placeholder="예: 990000" aria-label="${esc(p.ko)} 가격"></td><td>${custom?`<button class="del" data-del="${p.id}" type="button">삭제</button>`:""}</td></tr>`;}).join("");
   $("procRows").querySelectorAll("input").forEach(i=>i.addEventListener("input",markDirty));
   $("procRows").querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{const id=b.dataset.del;const ko=(ALL().find(p=>p.id===id)||{}).ko;commit();S.custom=S.custom.filter(p=>p.id!==id);delete S.procs[id];state.priceSel.delete(id);renderRows();saveAll(`‘${ko}’를 삭제하고 저장했어요`);}));
 }
 function addProc(){
-  const ko=$("nKo").value.trim(),zh=$("nZh").value.trim();
-  if(!ko||!zh){$("addMsg").textContent="시술명(한국어)과 중국어 표기는 꼭 넣어 주세요.";return;}
-  const id="c_"+Date.now().toString(36);
-  commit();
-  const cat=$("nCat").value;
-  const alias=$("nKw").value.split(/[,，、]/).map(x=>x.trim()).filter(Boolean);
-  alias.push(ko);zh.split(/\s+/).forEach(w=>{if(w.length>1)alias.push(w);});
-  S.custom.push({id,ko,zh,unit:$("nUnit").value.trim(),c:[cat],effZh:$("nEffZh").value.trim()||"[效果]",effKo:$("nEffKo").value.trim()||"[효과]",alias});
-  const krw=$("nKrw").value.trim();if(krw)S.procs[id]={krw};
-  renderRows();saveAll(`‘${ko}’를 추가하고 저장했어요`);
-  ["nKo","nZh","nUnit","nKrw","nEffZh","nEffKo","nKw"].forEach(i=>$(i).value="");
-  $("addMsg").textContent="";
+  const msg=$("addMsg");
+  try{
+    const ko=$("nKo").value.trim(),zh=$("nZh").value.trim();
+    $("nKo").removeAttribute("aria-invalid");$("nZh").removeAttribute("aria-invalid");
+    if(!ko||!zh){
+      const miss=!ko?"nKo":"nZh";$(miss).setAttribute("aria-invalid","true");$(miss).focus();
+      msg.className="err";msg.textContent=!ko?"시술명(한국어)을 넣어 주세요.":"중국어 표기를 넣어 주세요. 답글에 이 이름이 들어가요.";return;}
+    if(ALL().some(p=>p.ko===ko)){msg.className="err";msg.textContent=`‘${ko}’는 이미 표에 있어요. 표에서 가격만 고치고 저장하세요.`;return;}
+    const id="c_"+Date.now().toString(36);
+    commit();
+    const cat=$("nCat").value||"other";
+    const alias=$("nKw").value.split(/[,，、]/).map(x=>x.trim()).filter(Boolean);
+    alias.push(ko);zh.split(/\s+/).forEach(w=>{if(w.length>1)alias.push(w);});
+    S.custom.push({id,ko,zh,unit:$("nUnit").value.trim(),c:[cat],effZh:$("nEffZh").value.trim()||"[效果]",effKo:$("nEffKo").value.trim()||"[효과]",alias});
+    const krw=$("nKrw").value.replace(/[^0-9]/g,"");S.procs[id]={zh,unit:$("nUnit").value.trim(),krw};
+    renderRows();saveAll(`‘${ko}’를 추가하고 저장했어요`);
+    ["nKo","nZh","nUnit","nKrw","nEffZh","nEffKo","nKw"].forEach(i=>$(i).value="");
+    msg.className="ok";msg.textContent=`‘${ko}’를 표 맨 아래에 추가했어요.${krw?"":" 가격은 표에서 넣고 저장하세요."}`;
+    const row=$("pz-"+id).closest("tr");row.classList.add("new");row.scrollIntoView({block:"center",behavior:"smooth"});setTimeout(()=>row.classList.remove("new"),2500);
+  }catch(e){msg.className="err";msg.textContent="추가 중 오류가 났어요: "+(e&&e.message||e);}
 }
 function renderPriceChips(){
   const ps=ALL().filter(p=>P(p).krw);
