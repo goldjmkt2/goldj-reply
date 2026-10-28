@@ -96,6 +96,50 @@ input[aria-invalid="true"]{border-color:var(--warn)}
 .addmore{grid-column:1/-1}
 .addmore summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
 .addmore .form{margin-top:8px}
+.tabbar,.mobile-only{display:none}
+@media (max-width:760px){
+  body{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+  .wrap{padding-block:12px 16px;gap:12px}
+  h1{font-size:20px}
+  .sub{display:none}
+  .mobile-only{display:block}
+  [data-pane]:not(.on){display:none!important}
+  details#settingsBox>summary{display:none}
+  details#settingsBox .setbody{margin-top:0}
+  .refs{position:static}
+  .panel{padding:14px;border-radius:12px}
+  input[type=text],input[type=number],select,textarea{font-size:16px}
+  button{min-height:44px;padding:10px 16px}
+  .chip{font-size:13px;padding:8px 12px;min-height:36px}
+  #post{min-height:200px}
+  .out.edit{min-height:42vh}
+  .row>button.primary{flex:1}
+  .copyrow{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--panel);padding-block:8px;margin-inline:-14px;padding-inline:14px;border-top:1px solid var(--line)}
+  .copyrow #copyBtn{flex:1}
+  .typeline{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+  .typeline button{min-height:36px;padding:6px 12px;font-size:13px}
+  #priceSelect{max-width:none!important;width:100%}
+  .refs a{padding:12px}
+  .tablewrap{overflow:visible}
+  .tablewrap table{min-width:0}
+  .tablewrap thead{display:none}
+  .tablewrap tbody{display:grid;gap:10px}
+  .tablewrap tr{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg)}
+  .tablewrap td{display:grid;gap:3px;border:0;padding:0;font-size:12px;color:var(--muted)}
+  .tablewrap td::before{content:attr(data-label)}
+  .tablewrap td:first-child{grid-column:1/-1;font-size:15px;font-weight:700;color:var(--ink)}
+  .tablewrap td:first-child::before{content:none}
+  .tablewrap td:last-child:empty{display:none}
+  .tablewrap td:last-child::before{content:none}
+  .tablewrap td:nth-child(2){grid-column:1/-1}
+  .addform{grid-template-columns:1fr 1fr}
+  .addform label:nth-child(1),.addform label:nth-child(2),.addform #addBtn,.addform .addmore{grid-column:1/-1}
+  .savebar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--panel);z-index:5;margin-inline:-14px;padding:10px 14px}
+  .savebar #saveBtn{flex:1}
+  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--panel);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-right,0px))}
+  .tabbar button{border:0;background:transparent;border-radius:10px;min-height:52px;font-size:13px;color:var(--muted);padding:6px 4px}
+  .tabbar button[aria-current="page"]{color:var(--ink);font-weight:700;background:var(--gold-soft)}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 <style>body{margin:0}[hidden]{display:none!important}</style>
@@ -111,7 +155,7 @@ input[aria-invalid="true"]{border-color:var(--warn)}
 
   <div class="layout">
   <div class="main">
-  <details class="panel" id="settingsBox">
+  <details class="panel" id="settingsBox" data-pane="set">
     <summary>병원 설정 <span class="kw" id="setStatus"></span></summary>
     <div class="setbody">
     <div class="form">
@@ -159,8 +203,9 @@ input[aria-invalid="true"]{border-color:var(--warn)}
   </details>
 
   <div class="grid">
-    <section class="panel" aria-labelledby="inTitle">
+    <section class="panel" aria-labelledby="inTitle" data-pane="in">
       <h2 id="inTitle">1. 원글</h2>
+      <p class="mobile-only kw" style="margin:0">원글 칸을 길게 눌러 붙여넣은 뒤 ‘답글 만들기’를 누르세요.</p>
       <div class="chips" id="samples"></div>
       <textarea id="post" placeholder="스레드 원글을 붙여넣으세요 (중국어·한국어 모두 가능)"></textarea>
       <div class="postko" id="postKo" hidden aria-live="polite"><span class="lbl">한국어 해석</span><span id="postKoText"></span></div>
@@ -171,16 +216,17 @@ input[aria-invalid="true"]{border-color:var(--warn)}
       <div id="analysis" class="grid" style="grid-template-columns:minmax(0,1fr);gap:10px"></div>
     </section>
 
-    <section class="panel" aria-labelledby="outTitle">
+    <section class="panel" aria-labelledby="outTitle" data-pane="out">
       <div class="row" style="justify-content:space-between">
         <h2 id="outTitle">2. 답글</h2>
         <div class="row">
           <button id="rerollBtn" disabled>문구 바꾸기</button>
         </div>
       </div>
-      <textarea class="out edit" id="outZh" aria-label="중국어 답글 (직접 수정 가능)" placeholder="왼쪽에서 원글을 넣고 ‘답글 만들기’를 누르세요."></textarea>
+      <div class="mobile-only typeline"><span id="typeLine">아직 만든 답글이 없어요.</span><button type="button" id="typeBtn">유형 바꾸기</button></div>
+      <textarea class="out edit" id="outZh" aria-label="중국어 답글 (직접 수정 가능)" placeholder="원글을 넣고 ‘답글 만들기’를 누르세요."></textarea>
       <p class="kw" id="editHint" style="margin:-4px 0 0">답글 칸을 눌러 바로 고칠 수 있어요. 수정한 내용 그대로 복사돼요.</p>
-      <div class="row">
+      <div class="row copyrow">
         <button class="primary" id="copyBtn" disabled>중국어 답글 복사</button>
         <span class="kw" id="copyMsg"></span>
       </div>
@@ -199,15 +245,21 @@ input[aria-invalid="true"]{border-color:var(--warn)}
       <div id="checks" style="display:grid;gap:8px"></div>
     </section>
   </div>
-  <p class="foot">자동 분류는 키워드 기준이라 틀릴 수 있어요. 유형 칩을 눌러 직접 바꿀 수 있고, 게시 전에는 꼭 사람이 한 번 읽어 주세요.</p>
+  <p class="foot" data-pane="out">자동 분류는 키워드 기준이라 틀릴 수 있어요. 유형 칩을 눌러 직접 바꿀 수 있고, 게시 전에는 꼭 사람이 한 번 읽어 주세요.</p>
   </div>
-  <aside class="panel refs" aria-labelledby="refTitle">
+  <aside class="panel refs" aria-labelledby="refTitle" data-pane="ref">
     <h2 id="refTitle">참고병원</h2>
     <ul id="refList"></ul>
     <p class="foot" style="margin:0">누르면 새 탭에서 스레드 계정이 열려요.</p>
   </aside>
   </div>
 </div>
+<nav class="tabbar" aria-label="화면 전환">
+  <button type="button" data-tab="in" aria-current="page">원글</button>
+  <button type="button" data-tab="out">답글</button>
+  <button type="button" data-tab="set">병원 설정</button>
+  <button type="button" data-tab="ref">참고병원</button>
+</nav>
 
 <script>
 (function(){
@@ -290,7 +342,7 @@ function bindSettings(){
   status();
 }
 function renderRows(){
-  $("procRows").innerHTML=ALL().map(p=>{const v=P(p);const custom=p.id.startsWith("c_");return `<tr><td>${esc(p.ko)}</td><td><input type="text" id="pz-${p.id}" value="${esc(v.zh)}" aria-label="${esc(p.ko)} 중국어 표기"></td><td><input type="text" id="pu-${p.id}" value="${esc(v.unit)}" aria-label="${esc(p.ko)} 단위"></td><td><input type="text" inputmode="numeric" class="num" id="pk-${p.id}" value="${esc(v.krw)}" placeholder="예: 990000" aria-label="${esc(p.ko)} 가격"></td><td>${custom?`<button class="del" data-del="${p.id}" type="button">삭제</button>`:""}</td></tr>`;}).join("");
+  $("procRows").innerHTML=ALL().map(p=>{const v=P(p);const custom=p.id.startsWith("c_");return `<tr><td>${esc(p.ko)}</td><td data-label="중국어 표기"><input type="text" id="pz-${p.id}" value="${esc(v.zh)}" aria-label="${esc(p.ko)} 중국어 표기"></td><td data-label="단위"><input type="text" id="pu-${p.id}" value="${esc(v.unit)}" aria-label="${esc(p.ko)} 단위"></td><td data-label="가격 (원)"><input type="text" inputmode="numeric" class="num" id="pk-${p.id}" value="${esc(v.krw)}" placeholder="예: 990000" aria-label="${esc(p.ko)} 가격"></td><td>${custom?`<button class="del" data-del="${p.id}" type="button">삭제</button>`:""}</td></tr>`;}).join("");
   $("procRows").querySelectorAll("input").forEach(i=>i.addEventListener("input",markDirty));
   $("procRows").querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{const id=b.dataset.del;const ko=(ALL().find(p=>p.id===id)||{}).ko;commit();S.custom=S.custom.filter(p=>p.id!==id);delete S.procs[id];state.priceSel.delete(id);renderRows();saveAll(`‘${ko}’를 삭제하고 저장했어요`);}));
 }
@@ -526,6 +578,7 @@ const state={a:null,type:null,text:"",priceSel:new Set()};
 function renderAnalysis(){
   const a=state.a;
   const typeChips=Object.entries(TYPES).map(([k,v])=>`<button class="chip${k===state.type?" on":""}" data-t="${k}" aria-pressed="${k===state.type}">${k} ${v.name}</button>`).join("");
+  $("typeLine").textContent=`유형: ${state.type} ${TYPES[state.type].name}`;
   const hit=(a.hits[state.type]||[]);
   $("analysis").innerHTML=`
     <div><h2 style="margin-bottom:6px">분류 결과</h2><div class="chips">${typeChips}</div>
@@ -559,12 +612,23 @@ async function translatePost(text){
     out.textContent=e.code==="rate_limited"?"요청이 많아 해석을 잠시 못 했어요. 잠시 후 다시 ‘답글 만들기’를 눌러 주세요.":"해석을 불러오지 못했어요.";
   }
 }
+const mq=matchMedia("(max-width:760px)");
+function setTab(t){
+  document.querySelectorAll("[data-pane]").forEach(el=>el.classList.toggle("on",el.dataset.pane===t));
+  document.querySelectorAll(".tabbar [data-tab]").forEach(b=>{if(b.dataset.tab===t)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
+  if(t==="set")$("settingsBox").open=true;
+  if(mq.matches)window.scrollTo(0,0);
+}
+document.querySelectorAll(".tabbar [data-tab]").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+$("typeBtn").addEventListener("click",()=>{setTab("in");setTimeout(()=>$("analysis").scrollIntoView({block:"start"}),0);});
+setTab("in");
 function run(auto){
   const text=$("post").value.trim();
   if(!text){$("outZh").value="";$("outZh").placeholder="원글을 먼저 붙여넣어 주세요.";return;}
   state.text=text;state.priceSel.clear();renderPriceChips();state.a=analyze(text);state.type=state.a.type;seed=(Date.now()%2147483646)+1;
   renderAnalysis();generate();
   if(auto!==true)translatePost(text);else $("postKo").hidden=true;
+  if(auto!==true&&mq.matches)setTab("out");
 }
 $("goBtn").addEventListener("click",()=>run());
 let editT=null;
